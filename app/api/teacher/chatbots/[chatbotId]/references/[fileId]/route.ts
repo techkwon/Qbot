@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyTeacherRole } from '@/lib/authUtils';
@@ -15,7 +15,7 @@ export async function DELETE(
   { params }: { params: { chatbotId: string; fileId: string } }
 ) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = createClient(cookieStore);
   const { chatbotId, fileId } = params;
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -94,7 +94,7 @@ export async function PATCH(
   { params }: { params: { chatbotId: string; fileId: string } }
 ) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = createClient(cookieStore);
   const { chatbotId, fileId } = params;
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();

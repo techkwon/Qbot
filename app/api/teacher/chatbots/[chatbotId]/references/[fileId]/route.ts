@@ -9,13 +9,21 @@ const updateReferenceSchema = z.object({
   is_public: z.boolean(),
 });
 
+// 타입 정의 추가
+interface RouteContext {
+  params: {
+    chatbotId: string;
+    fileId: string;
+  };
+}
+
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { chatbotId: string; fileId: string } }
+  context: RouteContext // 두 번째 인자를 context 객체로 받도록 수정
 ) {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
-  const { chatbotId, fileId } = params;
+  const { chatbotId, fileId } = context.params; // 내부에서 params 사용
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) {
@@ -90,11 +98,11 @@ export async function DELETE(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { chatbotId: string; fileId: string } }
+  context: RouteContext // 두 번째 인자를 context 객체로 받도록 수정
 ) {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
-  const { chatbotId, fileId } = params;
+  const { chatbotId, fileId } = context.params; // 내부에서 params 사용
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) {

@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { z } from 'zod';
 
 // 사용되지 않으므로 주석 처리 또는 제거 (여기서는 주석 처리)
 /*

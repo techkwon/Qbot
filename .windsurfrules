@@ -1,0 +1,176 @@
+# 📘 교육용 챗봇 설계 플랫폼 PRD (Product Requirements Document)
+
+우리 프로젝트 이름은 질문이(Qbot)입니다.
+
+## 🧩 1. 개요
+**목표:** 교사가 직접 AI 챗봇을 설계하고 학생에게 배포하여, 학생과의 대화를 통해 학습 목표 도달 여부를 확인하고 평가할 수 있는 교육용 챗봇 플랫폼을 구축한다.
+
+**주요 사용자:**
+- 교사 (챗봇 설계 및 관리, 학생 피드백 수집)
+- 학생 (챗봇과 대화하며 학습 수행 및 자기 평가)
+
+---
+
+## 🧩 2. 주요 기능
+
+### 🧑‍🏫 교사용 기능
+1. 챗봇 설계용 인터페이스 (GPTs 스타일)
+   - 자연어로 수업 목표, 주제 입력 → AI가 챗봇 시나리오 생성
+   - 참고자료 업로드 (PDF, 텍스트, 링크)
+   - 업로드 자료에 대해 "학생에게 공개 여부" 설정 가능
+
+2. 학습 목표 설정
+   - 챗봇마다 1개 이상의 학습 목표를 지정
+   - 각 목표에 대해 AI가 자동 키워드 추출 및 평가 기준 제안
+
+3. 학생 및 클래스 관리 기능
+   - 이름, 학번, 비밀번호 등 학생 정보 등록 및 관리
+   - CSV 템플릿을 통해 대량 등록 가능
+   - 교사 로그인 상태에서만 학생 목록 열람 가능
+   - 클래스(반) 단위로 학생 그룹 구성 가능
+   - 각 챗봇을 어떤 클래스에서 사용할 수 있을지 **온/오프 설정** 가능
+   - 챗봇별 참여 링크 생성 및 배포 (챗봇별 고유 접속 URL 제공, **커스텀 링크명 설정 가능**)
+   - 클래스별로 해당 챗봇의 **학생 사용 횟수 제한 기능** 제공
+     - 예: 1일 1회, 주 3회 등 횟수 제한 설정 가능
+     - **교사는 학생별 사용 횟수 초기화 또는 전체 초기화 기능 제공**
+   - 로그인한 학생이 속한 클래스에서 해당 챗봇이 **활성화된 경우에만 사용 가능**
+   - CSV 템플릿 형식:
+     - 컬럼: 이름, 학번, 비밀번호, 클래스명
+     - 예시:
+       ```csv
+       이름,학번,비밀번호,클래스
+       김철수,30101,password123,3-1
+       이영희,30102,password456,3-2
+       ```
+
+4. 챗봇 배포 및 운영 관리
+   - 설계된 챗봇 저장 및 편집
+   - 챗봇 사용 가능 클래스 설정 (복수 선택 가능)
+   - 챗봇별 학생 접속용 고유 링크 생성 (커스텀 URL 설정 기능 포함)
+   - 학생별 대화 기록 수집 및 열람
+   - 학습 목표 달성 여부 대시보드 확인 (AI 자동 판단 결과 포함)
+   - 대화 내용과 챗봇 응답은 교사 로그인 상태에서만 접근 가능
+   - **사용 횟수 초기화 기능:**
+     - 학생별로 개별 초기화
+     - 클래스 전체 초기화
+     - 챗봇별 전체 학생 대상 초기화
+
+5. 피드백 수집 및 시각화
+   - 학생별 목표 달성률, 키워드 포함 여부, AI 평가 결과 시각화
+
+
+### 👦 학생용 기능
+1. 챗봇 대화 인터페이스
+   - 제공된 챗봇별 고유 링크(또는 커스텀 링크)를 통해 접속
+   - 학번과 비밀번호를 입력하여 로그인
+   - 로그인 성공 시, 해당 클래스에 대해 챗봇이 활성화되어 있고 사용 가능 횟수를 초과하지 않았을 경우 인터페이스 접근 가능
+   - 챗봇과 자연스러운 대화 진행 (GPT처럼 **대화 맥락 유지**) 
+   - 이미지 첨부 기능 지원: 학생이 사진, 캡처 이미지 등 첨부 가능 (AI가 이미지 해석)
+   - STT(Speech-to-Text) 기능: 학생이 음성으로 말하면 텍스트로 전환하여 챗봇에 입력
+   - 횟수 초과 시: “오늘은 더 이상 이 챗봇을 사용할 수 없습니다” 안내 제공
+
+2. 참고자료 열람
+   - 교사가 "공개"로 설정한 자료에만 접근 가능
+
+3. 학습 목표 체크리스트
+   - 대화 종료 후 학생이 각 목표에 대해 스스로 달성 여부 체크
+   - AI 자동 평가 결과와 함께 표시될 수 있음
+
+4. 보안 처리
+   - 학번+비밀번호 기반 인증 → Supabase Auth 또는 커스텀 로그인 구현
+   - 비밀번호는 암호화 저장 (bcrypt 등)
+
+---
+
+## 🧩 3. AI 활용 기능
+
+### 🤖 챗봇 설계 지원 (교사용 GPTs)
+- 교사가 수업 개요, 단원, 주제 등을 설명하면 AI가 시나리오(프롬프트) 생성
+- 업로드한 참고자료 기반으로 맥락을 잡아 대화 흐름 자동 제안
+
+### 🎯 학습 목표 평가
+- AI가 학생과의 전체 대화 내용을 기반으로 학습 목표 달성 여부 판단
+- 예상 키워드 포함 여부, 설명 수준, 대화 논리성 등을 종합 분석
+- 판단 결과: `goal_achieved: true/false`, `reason: 텍스트 설명`
+
+---
+
+## 🧩 4. 데이터베이스 구조 (예시)
+
+### 📄 chatbot_templates
+- id
+- teacher_id
+- name
+- custom_link_slug
+- base_prompt
+- learning_goals[]
+- reference_files[]
+- allowed_classes[]
+- max_attempts_per_class[]
+- created_at
+
+### 📄 learning_goals
+- id
+- chatbot_id
+- goal_text
+- expected_keywords[]
+- visible_to_student (boolean)
+- created_by
+
+### 📄 students
+- id
+- teacher_id
+- name
+- student_number
+- password (암호화 저장)
+- class_name
+- created_at
+
+### 📄 student_sessions
+- id
+- student_id
+- chatbot_id
+- start_time
+- end_time
+- used_attempt_count
+
+### 📄 chat_messages
+- id
+- session_id
+- sender ("student" | "bot")
+- message
+- image_url (optional)
+- is_voice_input (boolean)
+- timestamp
+
+### 📄 student_goal_responses
+- id
+- student_id
+- chatbot_id
+- goal_id
+- checked_by_student (boolean)
+- evaluated_by_ai (boolean)
+- evaluation_comment
+
+---
+
+## 🧩 5. 기술 스택 제안
+- **프론트엔드:** Next.js, Tailwind CSS, Vercel
+- **백엔드/API:** Next.js API Routes or Edge Functions
+- **AI 모델:** OpenAI ChatGPT API (gpt-3.5/4 turbo + vision/stt 옵션 포함)
+- **DB/인증:** Supabase (PostgreSQL, Auth, Storage)
+- **STT 처리:** Web Speech API 또는 Whisper API 연동
+- **이미지 분석:** GPT-4 Vision 또는 Gemini API 연동
+
+---
+
+## 🧩 6. 향후 확장 아이디어
+- 학생 피드백을 요약해 교사에게 리포트 자동 생성
+- GPTs처럼 챗봇 설계 템플릿 마켓 제공
+- 챗봇 스타일(설명형, 토론형 등) 선택 옵션 추가
+- 학생 감정 분석 기능 탑재
+
+Supabase
+Project URL : https://ynrborfizjcsdxrdnyug.supabase.co
+Project API Key : anon public eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlucmJvcmZpempjc2R4cmRueXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxNDc4MTgsImV4cCI6MjA2MTcyMzgxOH0.kR6lTNLX5D-krvLTcsv-OGccQ5rks7xY1Urur54vD54
+service_role secret : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlucmJvcmZpempjc2R4cmRueXVnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjE0NzgxOCwiZXhwIjoyMDYxNzIzODE4fQ.V217IIpbOctcKMSKQrYK4nw8BUjHJb12RRh8KUl6X8M

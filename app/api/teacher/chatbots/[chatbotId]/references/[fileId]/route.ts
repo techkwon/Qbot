@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyTeacherRole } from '@/lib/authUtils';
 import { z } from 'zod';
-import { User } from '@supabase/supabase-js';
 
 // PATCH 요청 본문 유효성 검사를 위한 스키마
 const updateReferenceSchema = z.object({
@@ -22,7 +21,7 @@ export async function DELETE(
   if (userError || !user) {
       return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
   }
-  const isTeacher = await verifyTeacherRole(supabase, user as User);
+  const isTeacher = await verifyTeacherRole(supabase, user);
   if (!isTeacher) {
     return NextResponse.json({ error: '권한이 없습니다. 교사만 삭제 가능합니다.' }, { status: 403 });
   }
@@ -101,7 +100,7 @@ export async function PATCH(
   if (userError || !user) {
       return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
   }
-  const isTeacher = await verifyTeacherRole(supabase, user as User);
+  const isTeacher = await verifyTeacherRole(supabase, user);
   if (!isTeacher) {
     return NextResponse.json({ error: '권한이 없습니다. 교사만 수정 가능합니다.' }, { status: 403 });
   }

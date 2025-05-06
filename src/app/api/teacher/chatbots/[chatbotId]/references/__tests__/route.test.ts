@@ -1,8 +1,8 @@
 // /Users/techkwon/my-app/ChatCat/src/app/api/teacher/chatbots/[chatbotId]/references/__tests__/route.test.ts
 import { GET, POST, DELETE } from '../route'; // 테스트 대상 핸들러 임포트
 import { NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+// import { cookies } from 'next/headers'; // 사용하지 않으므로 제거
+import { createClient } from '@supabase/ssr'; // 실제 함수 이름으로 변경
 import { verifyTeacherRole } from '@/lib/authUtils';
 
 // --- Mocking Dependencies ---
@@ -31,7 +31,7 @@ const mockSupabaseClient = {
   from: jest.fn(), // Will be implemented per test using mockImplementation
 };
 jest.mock('@supabase/ssr', () => ({
-  createServerClient: jest.fn(() => mockSupabaseClient),
+  createClient: jest.fn(() => mockSupabaseClient), // 함수 이름 변경
 }));
 
 // Mock @/lib/authUtils

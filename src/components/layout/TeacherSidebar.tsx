@@ -1,9 +1,12 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Bot, Users, BookOpen, MessageSquare } from 'lucide-react';
+import { Home, Users, MessageSquare, BarChart2, GraduationCap, Settings, LogOut, Bot, School } from 'lucide-react';
 import clsx from 'clsx'; // 조건부 클래스 적용 유틸리티
+import { SignOutButton } from "@clerk/nextjs";
+import { Button } from '@/components/ui/button';
 
 const navigation = [
     { name: 'Dashboard', href: '/teacher/dashboard', icon: LayoutDashboard },

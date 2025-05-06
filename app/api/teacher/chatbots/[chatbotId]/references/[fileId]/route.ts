@@ -1,8 +1,9 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getUserRole } from '@/lib/auth/get-user-role';
+import { verifyTeacherRole } from '@/lib/authUtils';
 import { z } from 'zod';
+import { User } from '@supabase/supabase-js';
 
 // PATCH 요청 본문 유효성 검사를 위한 스키마
 const updateReferenceSchema = z.object({
@@ -17,10 +18,13 @@ export async function DELETE(
   const supabase = createServerClient(cookieStore);
   const { chatbotId, fileId } = params;
 
-  // 사용자 역할 확인 (교사만 허용)
-  const { role } = await getUserRole(supabase);
-  if (role !== 'teacher') {
-    return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 });
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+      return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
+  }
+  const isTeacher = await verifyTeacherRole(supabase, user as User);
+  if (!isTeacher) {
+    return NextResponse.json({ error: '권한이 없습니다. 교사만 삭제 가능합니다.' }, { status: 403 });
   }
 
   try {
@@ -93,10 +97,13 @@ export async function PATCH(
   const supabase = createServerClient(cookieStore);
   const { chatbotId, fileId } = params;
 
-  // 사용자 역할 확인 (교사만 허용)
-  const { role } = await getUserRole(supabase);
-  if (role !== 'teacher') {
-    return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 });
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+      return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
+  }
+  const isTeacher = await verifyTeacherRole(supabase, user as User);
+  if (!isTeacher) {
+    return NextResponse.json({ error: '권한이 없습니다. 교사만 수정 가능합니다.' }, { status: 403 });
   }
 
   try {

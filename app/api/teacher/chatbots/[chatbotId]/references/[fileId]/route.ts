@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyTeacherRole } from '@/lib/authUtils';
 import { z } from 'zod';
@@ -9,10 +9,13 @@ const updateReferenceSchema = z.object({
   is_public: z.boolean(),
 });
 
-export async function DELETE(
+// Context 타입을 위한 type alias 정의
+type RouteContext = { params: { chatbotId: string; fileId: string } };
+
+export const DELETE = async (
   request: NextRequest,
-  context: { params: { chatbotId: string; fileId: string } }
-) {
+  context: RouteContext
+): Promise<NextResponse> => {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
   const { chatbotId, fileId } = context.params;
@@ -88,10 +91,10 @@ export async function DELETE(
   }
 }
 
-export async function PATCH(
+export const PATCH = async (
   request: NextRequest,
-  context: { params: { chatbotId: string; fileId: string } }
-) {
+  context: RouteContext
+): Promise<NextResponse> => {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
   const { chatbotId, fileId } = context.params;
@@ -138,7 +141,7 @@ export async function PATCH(
 
   } catch (error) {
     console.error('PATCH /references/[fileId] error:', error);
-    if (error instanceof SyntaxError) { // JSON 파싱 에러 처리
+    if (error instanceof SyntaxError) {
         return NextResponse.json({ error: '잘못된 JSON 형식입니다.' }, { status: 400 });
     }
     return NextResponse.json(

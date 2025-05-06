@@ -39,19 +39,7 @@ export async function POST(
   const { chatbotId } = params;
 
   // TODO: getUserRole 함수 구현 또는 직접 역할 확인 로직 추가 필요
-  // 임시로 교사 역할 확인 로직 비활성화 (테스트용)
-  /*
-  const { data: userForRole, error: userRoleError } = await supabase.auth.getUser();
-  if (userRoleError || !userForRole) { /* ... handling ... */ }
-  const { data: profileForRole, error: profileRoleError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userForRole.id)
-      .single();
-  if (profileRoleError || !profileForRole || profileForRole.role !== 'teacher') {
-    return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 });
-  }
-  */
+  // 아래 주석 블록 삭제
 
   const formData = await request.formData();
   const file = formData.get('file') as File | null;

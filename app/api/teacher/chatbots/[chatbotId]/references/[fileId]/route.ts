@@ -9,12 +9,9 @@ const updateReferenceSchema = z.object({
   is_public: z.boolean(),
 });
 
-// Context 타입을 위한 type alias 정의
-type RouteContext = { params: { chatbotId: string; fileId: string } };
-
 export const DELETE = async (
   request: NextRequest,
-  context: RouteContext
+  context: { params: { chatbotId: string; fileId: string } }
 ): Promise<NextResponse> => {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
@@ -93,7 +90,7 @@ export const DELETE = async (
 
 export const PATCH = async (
   request: NextRequest,
-  context: RouteContext
+  context: { params: { chatbotId: string; fileId: string } }
 ): Promise<NextResponse> => {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);

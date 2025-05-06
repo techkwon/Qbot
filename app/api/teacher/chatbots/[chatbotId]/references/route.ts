@@ -2,7 +2,6 @@ import { createServerClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { getUserRole } from '@/lib/auth/get-user-role';
 
 // Zod 스키마 정의 (파일 메타데이터)
 const fileMetadataSchema = z.object({
@@ -91,37 +90,68 @@ export async function GET(
   { params }: { params: { chatbotId: string } }
 ) {
   const cookieStore = cookies();
-  const supabase = createServerClient<Database>( /* ... supabase client init ... */ ); // 타입 명시
+  const supabase = createServerClient(cookieStore);
   const { chatbotId } = params;
 
   try {
-    // 1. 사용자 역할 및 ID 확인
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !session?.user) {
+    // 1. 사용자 인증 정보 가져오기
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
-    const userId = session.user.id;
-    // getUserRole 함수가 user role과 student profile 정보(id, class_name 등)를 반환한다고 가정
-    // 실제 getUserRole 구현에 따라 조정 필요
-    const { role, profile: userProfile } = await getUserRole(supabase, userId); 
+    const userId = user.id;
+
+    // 2. 사용자 프로필 및 역할 정보 조회
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles') // 실제 프로필 테이블 이름 확인 필요
+        .select('role, class_name') // 필요한 컬럼 명시
+        .eq('id', userId)
+        .single();
+
+    if (profileError) {
+        console.error(`Error fetching profile for user ${userId}:`, profileError);
+        // 프로필 조회 실패 시 접근 불가 처리
+        return NextResponse.json({ error: 'Failed to retrieve user profile' }, { status: 500 });
+    }
+
+    if (!profile) {
+        // 프로필이 없는 경우 (이론적으로는 발생하기 어려움)
+        return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
+    }
+
+    const role = profile.role; // 사용자 역할
+    const userProfile = profile; // 프로필 정보 (class_name 포함 가능)
 
     let query = supabase
       .from('reference_files') // 실제 테이블명
-      .select('*') // 필요한 컬럼만 선택하는 것이 더 좋음
+      .select('id, file_name, created_at, is_public') // 필요한 컬럼만 선택 (storage_path 등 민감 정보 제외 고려)
       .eq('chatbot_id', chatbotId)
       .order('created_at', { ascending: false });
 
     if (role === 'teacher') {
       // 교사는 모든 파일 조회 가능 (소유권 확인은 여기서 하지 않음 - 필요시 추가)
       console.log(`Teacher (${userId}) accessing references for chatbot ${chatbotId}`);
+      // 교사에게는 모든 컬럼 반환 가능하도록 재정의 (선택 사항)
+      query = supabase
+          .from('reference_files')
+          .select('*')
+          .eq('chatbot_id', chatbotId)
+          .order('created_at', { ascending: false });
+
     } else if (role === 'student' && userProfile) {
       console.log(`Student (${userId}, class: ${userProfile.class_name}) accessing references for chatbot ${chatbotId}`);
       // 학생인 경우 접근 권한 확인 및 공개 파일만 필터링
       const studentClassName = userProfile.class_name;
 
+      if (!studentClassName) {
+          // 학생 프로필에 class_name이 없는 경우 처리
+          console.warn(`Student ${userId} profile is missing class_name.`);
+          return NextResponse.json({ error: 'Student class information is missing' }, { status: 403 });
+      }
+
       // 챗봇의 허용 클래스 확인
       const { data: chatbot, error: chatbotError } = await supabase
-          .from('chatbots')
+          .from('chatbots') // 실제 챗봇 테이블 이름 확인 필요
           .select('allowed_classes')
           .eq('id', chatbotId)
           .single();
@@ -132,14 +162,18 @@ export async function GET(
           return NextResponse.json({ error: 'Chatbot not found or inaccessible' }, { status: 404 });
       }
 
-      const isAllowed = chatbot.allowed_classes?.includes(studentClassName);
+      // allowed_classes가 null/undefined 이거나 배열이 아닐 수 있으므로 안전하게 처리
+      const allowedClasses = Array.isArray(chatbot.allowed_classes) ? chatbot.allowed_classes : [];
+      const isAllowed = allowedClasses.includes(studentClassName);
+
       if (!isAllowed) {
           console.warn(`Student from class ${studentClassName} denied access to references for chatbot ${chatbotId}`);
-          return NextResponse.json({ error: 'Access denied to this chatbot's references for your class' }, { status: 403 });
+          // 여기서 문법 오류가 발생했을 가능성? --> 코드는 정상으로 보임
+          return NextResponse.json({ error: "Access denied to this chatbot's references for your class" }, { status: 403 });
       }
 
-      // 접근 가능하면 is_public = true 인 파일만 조회하도록 쿼리 수정
-      query = query.eq('is_public', true);
+      // 접근 가능하면 is_public = true 인 파일만 조회하도록 쿼리 수정 (기본 쿼리에서 이미 처리됨)
+      query = query.eq('is_public', true); // 학생용 기본 쿼리로 is_public 필터링
 
     } else {
       // 교사 또는 학생이 아닌 경우 접근 불가
@@ -158,7 +192,7 @@ export async function GET(
       );
     }
 
-    // 학생에게는 storage_path 같은 민감 정보 제외하고 반환 고려
+    // 학생에게는 storage_path 같은 민감 정보 제외하고 반환 (select에서 이미 처리됨)
     // if (role === 'student') { data = data.map(({ storage_path, ...rest }) => rest); }
 
     return NextResponse.json(data || [], { status: 200 });
